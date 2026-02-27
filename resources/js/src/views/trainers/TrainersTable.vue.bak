@@ -1,0 +1,213 @@
+<template>
+  <div class="trainers-table">
+    <DataTable
+      :columns="columns"
+      :server-side="true"
+      :url="'/api/trainers/data'"
+      :actions="actions"
+      :filters="filters"
+      @edit="handleEdit"
+      @delete="handleDelete"
+      @create="handleCreate"
+      @view="handleView"
+    >
+      <!-- Custom Column Templates -->
+      <template #full_name="{ row }">
+        <div class="flex items-center space-x-3">
+          <div class="avatar">
+            <img 
+              v-if="row.photo" 
+              :src="row.photo" 
+              :alt="row.full_name"
+              class="w-8 h-8 rounded-full"
+            />
+            <div v-else class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+              <i class="fas fa-user text-gray-500"></i>
+            </div>
+          </div>
+          <div>
+            <div class="font-medium">{{ row.full_name }}</div>
+          </div>
+        </div>
+      </template>
+
+      <template #certifications="{ row }">
+        <div class="max-w-xs truncate" :title="row.certifications">
+          {{ row.certifications || 'No certifications' }}
+        </div>
+      </template>
+
+      <template #status="{ row }">
+        <span 
+          :class="getStatusClass(row.status)"
+          class="px-2 py-1 rounded-full text-xs font-medium"
+        >
+          {{ row.status }}
+        </span>
+      </template>
+
+      <template #salary="{ row }">
+        <span class="font-medium">{{ row.salary || 'N/A' }}</span>
+      </template>
+
+      <template #commission_rate="{ row }">
+        <span class="font-medium">{{ row.commission_rate || 'N/A' }}</span>
+      </template>
+
+      <template #years_of_service="{ row }">
+        <span class="font-medium">{{ row.years_of_service }}</span>
+      </template>
+
+      <template #hire_date="{ row }">
+        <span>{{ formatDate(row.hire_date) }}</span>
+      </template>
+
+      <template #created_at="{ row }">
+        <span>{{ row.created_at }}</span>
+      </template>
+    </DataTable>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import DataTable from '@/views/components/DataTable/index.vue';
+
+// Meta information
+defineOptions({
+  name: 'TrainersTable'
+});
+
+// Table columns configuration
+const columns = ref([
+  {
+    data: 'full_name',
+    title: 'Full Name',
+    searchable: true,
+    sortable: true
+  },
+  {
+    data: 'phone',
+    title: 'Phone',
+    searchable: true,
+    sortable: true
+  },
+  {
+    data: 'email',
+    title: 'Email',
+    searchable: true,
+    sortable: true
+  },
+  {
+    data: 'certifications',
+    title: 'Certifications',
+    searchable: true,
+    sortable: false
+  },
+  {
+    data: 'hire_date',
+    title: 'Hire Date',
+    searchable: false,
+    sortable: true
+  },
+  {
+    data: 'salary',
+    title: 'Salary',
+    searchable: false,
+    sortable: true
+  },
+  {
+    data: 'commission_rate',
+    title: 'Commission Rate',
+    searchable: false,
+    sortable: true
+  },
+  {
+    data: 'years_of_service',
+    title: 'Years of Service',
+    searchable: false,
+    sortable: false
+  },
+  {
+    data: 'status',
+    title: 'Status',
+    searchable: true,
+    sortable: true
+  },
+  {
+    data: 'created_at',
+    title: 'Created At',
+    searchable: false,
+    sortable: true
+  }
+]);
+
+// Table actions configuration
+const actions = ref({
+  create: true,
+  view: true,
+  edit: true,
+  delete: true
+});
+
+// Filters configuration
+const filters = ref([
+  {
+    name: 'status',
+    type: 'select',
+    placeholder: 'Filter by Status',
+    options: [
+      { value: '', text: 'All Statuses' },
+      { value: 'active', text: 'Active' },
+      { value: 'on_leave', text: 'On Leave' },
+      { value: 'terminated', text: 'Terminated' }
+    ]
+  }
+]);
+
+// Helper methods
+const getStatusClass = (status) => {
+  const statusClasses = {
+    'active': 'bg-green-100 text-green-800',
+    'on_leave': 'bg-yellow-100 text-yellow-800',
+    'terminated': 'bg-red-100 text-red-800'
+  };
+  return statusClasses[status] || 'bg-gray-100 text-gray-800';
+};
+
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString();
+};
+
+// Action handlers
+const handleCreate = () => {
+  // TODO: Implement create trainer functionality
+  console.log('Create trainer');
+};
+
+const handleEdit = (trainer) => {
+  // TODO: Implement edit trainer functionality
+  console.log('Edit trainer:', trainer);
+};
+
+const handleDelete = (trainer) => {
+  // TODO: Implement delete trainer functionality
+  console.log('Delete trainer:', trainer);
+};
+
+const handleView = (trainer) => {
+  // TODO: Implement view trainer functionality
+  console.log('View trainer:', trainer);
+};
+</script>
+
+<style scoped>
+.trainers-table {
+  /* Custom styles if needed */
+}
+
+.avatar img {
+  object-fit: cover;
+}
+</style>

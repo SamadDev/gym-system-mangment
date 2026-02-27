@@ -1,0 +1,195 @@
+<script setup>
+import DataTable from "../components/DataTable/index.vue";
+import DeleteButton from "../components/DeleteButton.vue";
+import EditButton from "../components/EditButton.vue";
+import ViewButton from "../components/ViewButton.vue";
+import eventBus from "../../eventBus.js";
+import {can, translate} from "../../utils/functions.js";
+import Swal from 'sweetalert2';
+import {axiosRequest} from "../../utils/apiRequest.js";
+import {useRouter} from 'vue-router';
+
+const router = useRouter();
+
+const columns = [
+    {
+        label: translate('id'),
+        field: "id",
+        width: "5%",
+        sortable: true,
+        isKey: true,
+    },
+    {
+        label: translate('member'),
+        field: "member",
+        width: "20%",
+        template: true,
+        sortable: true,
+    },
+    {
+        label: translate('check_in_time'),
+        field: "check_in_time",
+        width: "15%",
+        template: true,
+        sortable: true,
+    },
+    {
+        label: translate('check_out_time'),
+        field: "check_out_time",
+        width: "15%",
+        template: true,
+        sortable: true,
+    },
+    {
+        label: translate('duration'),
+        field: "duration",
+        width: "10%",
+        template: true,
+        sortable: true,
+    },
+    {
+        label: translate('date'),
+        field: "date",
+        width: "12%",
+        template: true,
+        sortable: true,
+    },
+    {
+        label: translate('action'),
+        field: "action",
+        width: "10%",
+        sortable: false,
+        template: true,
+    },
+];
+
+const handleView = (data) => {
+    router.push(`/admin/attendance/${data.id}`);
+}
+
+const handleEdit = (data) => {
+    router.push(`/admin/attendance/${data.id}/edit`);
+}
+
+const handleDelete = async (data) => {
+    let attendance_id = data.id;
+    Swal.fire({
+        title: translate('are_you_sure'),
+        text: "Once deleted, you will not be able to recover this attendance record!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: translate('yes_delete_it')
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                let url = "/admin/attendance/" + attendance_id;
+                const res = await axiosRequest.delete(url, {}, {notify: true});
+                eventBus.emit('reloadAttendanceDatatable');
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    });
+}
+
+// Helper functions for formatting
+const formatTime = (datetime) => {
+    if (!datetime) return '';
+    const date = new Date(datetime);
+    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+};
+
+const formatDate = (datetime) => {
+    if (!datetime) return '';
+    const date = new Date(datetime);
+    return date.toLocaleDateString();
+};
+
+const calculateDuration = (checkInTime, checkOutTime) => {
+    if (!checkInTime) return 'N/A';
+    if (!checkOutTime) return 'In progress';
+    
+    const checkIn = new Date(checkInTime);
+    const checkOut = new Date(checkOutTime);
+    const diffMs = checkOut - checkIn;
+    const diffHrs = Math.floor(diffMs / 3600000);
+    const diffMins = Math.floor((diffMs % 3600000) / 60000);
+    
+    if (diffHrs > 0) {
+        return `${diffHrs}h ${diffMins}m`;
+    }
+    return `${diffMins}m`;
+};
+
+</script>
+<template>
+    <data-table
+        :columns="columns"
+        url="/admin/attendance/data"
+        reloadTableEvent="reloadAttendanceDatatable"
+    >
+        <template #member="{ data }">
+            <div class="flex items-center space-x-3">
+                <div class="avatar">
+                    <img 
+                        v-if="data.value.member?.photo" 
+                        :src="data.value.member.photo" 
+                        :alt="data.value.member.full_name"
+                        class="w-8 h-8 rounded-full object-cover"
+                        @error="($event) => $event.target.style.display = 'none'"
+                    />
+                    <div v-else class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <div class="font-medium">{{ data.value.member?.full_name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500">{{ data.value.member?.member_code || 'N/A' }}</div>
+                </div>
+            </div>
+        </template>
+
+        <template #check_in_time="{ data }">
+            <div class="text-sm">
+                <div class="font-medium">{{ formatTime(data.value.check_in_time) }}</div>
+                <div class="text-gray-500 text-xs">{{ formatDate(data.value.check_in_time) }}</div>
+            </div>
+        </template>
+
+        <template #check_out_time="{ data }">
+            <div class="text-sm">
+                <div v-if="data.value.check_out_time" class="font-medium">
+                    {{ formatTime(data.value.check_out_time) }}
+                </div>
+                <div v-else class="text-orange-600 font-medium">
+                    Still in gym
+                </div>
+            </div>
+        </template>
+
+        <template #duration="{ data }">
+            <span class="text-sm font-medium">
+                {{ calculateDuration(data.value.check_in_time, data.value.check_out_time) }}
+            </span>
+        </template>
+
+        <template #date="{ data }">
+            <span class="text-sm">{{ formatDate(data.value.check_in_time) }}</span>
+        </template>
+
+        <template #action="{ data }">
+            <div class="flex items-center">
+                <view-button v-if="can('view_attendance')" @click="handleView(data.value)" class="mx-1"/>
+                <edit-button v-if="can('edit_attendance')" @click="handleEdit(data.value)" class="mx-1"/>
+                <delete-button v-if="can('delete_attendance')" @click="handleDelete(data.value)" class="mx-1"/>
+            </div>
+        </template>
+    </data-table>
+</template>
+
+<style scoped>
+</style>
